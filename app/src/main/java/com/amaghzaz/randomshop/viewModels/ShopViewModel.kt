@@ -35,8 +35,9 @@ class ShopViewModel : ViewModel() {
                 val productList = FakeStoreApiService.api.getProducts()
                 _products.value = productList
                 _filteredProducts.value = productList
+                val categoryList = FakeStoreApiService.api.getCategories()
                 val uniqueCategories =
-                    listOf("All") + productList.map { it -> it.category.replaceFirstChar { it.uppercase() } }
+                    listOf("All") + categoryList.map { it -> it.replaceFirstChar { it.uppercase() } }
                         .toSet().toList()
                 _categories.value = uniqueCategories
             } catch (e: Exception) {

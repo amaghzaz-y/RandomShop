@@ -68,10 +68,9 @@ class MainActivity : ComponentActivity() {
                 Scaffold(modifier = Modifier.fillMaxSize(), topBar = {
                     ProductTopAppBar(onCartClick = {
                         println("Search clicked")
-                    },
-                        onMenuClick = { category ->
-                            viewModel.filterProductsByCategory(category)
-                        }
+                    }, onMenuClick = { category ->
+                        viewModel.filterProductsByCategory(category)
+                    }
 
                     )
                 }) { innerPadding ->
@@ -140,14 +139,18 @@ fun ProductItem(product: Product) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProductTopAppBar(
-    onCartClick: () -> Unit,
-    onMenuClick: (String) -> Unit,
-    viewModel: ShopViewModel = viewModel()
+    onCartClick: () -> Unit, onMenuClick: (String) -> Unit, viewModel: ShopViewModel = viewModel()
 ) {
     var showMenu by remember { mutableStateOf(false) }
     val categories by viewModel.categories.collectAsState()
 
-    TopAppBar(title = { Text(text = "Products") }, modifier = Modifier.fillMaxWidth(), actions = {
+    TopAppBar(title = {
+        Text(
+            text = "\uD83D\uDECD\uFE0F RandomShop", fontWeight = FontWeight.Black, color = Color(
+                0xFF009688
+            )
+        )
+    }, modifier = Modifier.fillMaxWidth(), actions = {
 
         IconButton(onClick = { showMenu = !showMenu }) {
             Icon(imageVector = Icons.Filled.Search, contentDescription = "More")
@@ -159,13 +162,10 @@ fun ProductTopAppBar(
 
         DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
             categories.forEach { category ->
-                DropdownMenuItem(
-                    text = { Text(category) },
-                    onClick = {
-                        onMenuClick(category)
-                        showMenu = false
-                    }
-                )
+                DropdownMenuItem(text = { Text(category) }, onClick = {
+                    onMenuClick(category)
+                    showMenu = false
+                })
             }
         }
     })
