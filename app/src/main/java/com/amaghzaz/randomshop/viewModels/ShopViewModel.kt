@@ -51,8 +51,7 @@ class ShopViewModel : ViewModel() {
         if (key == "all") {
             _filteredProducts.value = _products.value
         } else {
-            val products =
-                _products.value.filter { it -> it.category ==key }
+            val products = _products.value.filter { it -> it.category == key }
             _filteredProducts.value = products
         }
     }
