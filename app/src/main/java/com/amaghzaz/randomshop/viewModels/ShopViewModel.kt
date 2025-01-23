@@ -29,6 +29,7 @@ class ShopViewModel(private val orderRepository: OrderRepository) : ViewModel() 
 
     init {
         fetchProducts()
+        updateCart()
     }
 
     private fun fetchProducts() {
@@ -42,9 +43,8 @@ class ShopViewModel(private val orderRepository: OrderRepository) : ViewModel() 
                     listOf("All") + categoryList.map { it.replaceFirstChar { it.uppercase() } }
                         .toSet().toList()
                 _categories.value = uniqueCategories
-                println(productList)
             } catch (e: Exception) {
-                Log.d("ERROR","Error fetching products: ${e.message}")
+                Log.d("ERROR", "Error fetching products: ${e.message}")
             }
         }
 
@@ -53,11 +53,11 @@ class ShopViewModel(private val orderRepository: OrderRepository) : ViewModel() 
     private fun fetchOrders() {
         viewModelScope.launch {
             try {
-                    _orders.value = this@ShopViewModel.orderRepository.getAllOrders()
-                    val incompleteOrder = this@ShopViewModel.orderRepository.getIncompleteOrder()
-                    if (incompleteOrder != null) {
-                        cartId = incompleteOrder.cartId
-                    }
+                _orders.value = orderRepository.getAllOrders()
+                val incompleteOrder = orderRepository.getIncompleteOrder()
+                if (incompleteOrder != null) {
+                    cartId = incompleteOrder.cartId
+                }
             } catch (e: Exception) {
                 println("Error fetching orders: ${e.message}")
             }
@@ -75,41 +75,52 @@ class ShopViewModel(private val orderRepository: OrderRepository) : ViewModel() 
     }
 
     fun addProduct(product: Product) {
-        println(this.orderRepository.hashCode())
         viewModelScope.launch {
             try {
+                updateCart()
                 val order = Order(
-                    cartId = cartId, product = product.id, complete = false)
+                    cartId = cartId, product = product.id, complete = false
+                )
                 orderRepository.addOrder(order)
+                updateCart()
             } catch (e: Exception) {
                 println("Error adding order: ${e.message}")
             }
         }
+
     }
 
     fun popProduct(product: Product) {
         viewModelScope.launch {
             try {
-               orderRepository.deleteOrderByProduct(product.id)
+                updateCart()
+                orderRepository.deleteOrderByProduct(product.id)
+                updateCart()
             } catch (e: Exception) {
                 println("Error adding order: ${e.message}")
             }
         }
     }
 
-    private fun getProductById(id:Int): Product? {
+    private fun getProductById(id: Int): Product? {
         return _products.value.find { it.id == id }
     }
 
-    fun getCart() {
+    fun updateCart() {
         viewModelScope.launch {
             try {
                 val orders = orderRepository.getAllOrders()
-                    val productQuantityPairs =
-                        orders.groupBy { it.product }.map { (id, ordersForProduct) ->
-                            Pair(getProductById(id)!!, ordersForProduct.size)
+                val productQuantityPairs = orders
+                    .groupBy { it.product }
+                    .mapNotNull { (id, ordersForProduct) ->
+                        val product = getProductById(id)
+                        if (product != null) {
+                            Pair(product, ordersForProduct.size)
+                        } else {
+                            null
                         }
-                    _cart.value = productQuantityPairs
+                    }
+                _cart.value = productQuantityPairs
             } catch (e: Exception) {
                 println("Error fetching orders: ${e.message}")
             }

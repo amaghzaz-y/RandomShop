@@ -3,7 +3,7 @@ package com.amaghzaz.randomshop.activities
 import androidx.compose.material3.Icon
 import android.annotation.SuppressLint
 import android.os.Bundle
-import android.util.Log
+import android.widget.Button
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -17,12 +17,17 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.outlined.ArrowDropDown
+import androidx.compose.material.icons.outlined.KeyboardArrowDown
+import androidx.compose.material.icons.outlined.KeyboardArrowUp
 import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -47,6 +52,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -54,7 +60,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import com.amaghzaz.randomshop.models.AppDatabase
@@ -64,8 +69,6 @@ import com.amaghzaz.randomshop.viewModels.ShopViewModel
 import com.amaghzaz.randomshop.viewModels.ShopViewModelFactory
 
 class MainActivity : ComponentActivity() {
-//    private lateinit var orderRepository: OrderRepository
-
     @SuppressLint("StateFlowValueCalledInComposition")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -85,12 +88,10 @@ class MainActivity : ComponentActivity() {
                     composable("shop") {
                         Scaffold(modifier = Modifier.fillMaxSize(), topBar = {
                             ProductTopAppBar(onCartClick = {
-                               navController.navigate("cart")
-                            },
-                                onMenuClick = { category ->
-                                    shopViewModel.filterProductsByCategory(category)
-                                }
-                            )
+                                navController.navigate("cart")
+                            }, onMenuClick = { category ->
+                                shopViewModel.filterProductsByCategory(category)
+                            }, viewModel = shopViewModel)
                         }) { innerPadding ->
                             ShopScreen(
                                 modifier = Modifier.padding(innerPadding),
@@ -101,31 +102,51 @@ class MainActivity : ComponentActivity() {
                     }
 
                     composable("product/{productId}") { backStackEntry ->
-                        println(orderRepository.hashCode())
                         val productId =
                             backStackEntry.arguments?.getString("productId")?.toIntOrNull()
                         val product = shopViewModel.products.value.find { it.id == productId }
-                        if (product != null) {
-                            ProductScreen(
-                                product = product,
-                                addToCart = { shopViewModel.addProduct(product) },
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(top = 42.dp)
-                            )
-                        } else {
-                            Text(
-                                text = "Product not found", modifier = Modifier.fillMaxSize()
-                            )
+                        Scaffold(modifier = Modifier.fillMaxSize(), topBar = {
+                            ProductTopAppBar(onCartClick = {
+                                navController.navigate("cart")
+                            }, onMenuClick = { category ->
+                                shopViewModel.filterProductsByCategory(category)
+                            },viewModel = shopViewModel)
+                        }) { innerPadding ->
+                            if (product != null) {
+                                ProductScreen(
+                                    product = product,
+                                    addToCart = { shopViewModel.addProduct(product) },
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(innerPadding)
+                                )
+                            } else {
+                                Text(
+                                    text = "Product not found", modifier = Modifier.fillMaxSize()
+                                )
+                            }
                         }
                     }
 
                     composable("cart") {
-                        CartScreen(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(top = 42.dp),
-                            viewModel = shopViewModel
+                        shopViewModel.updateCart()
+                        Scaffold(modifier = Modifier.fillMaxSize(), topBar = {
+                            ProductTopAppBar(onCartClick = {
+                                navController.navigate("cart")
+                            }, onMenuClick = { category ->
+                                shopViewModel.filterProductsByCategory(category)
+                            },viewModel = shopViewModel)
+                        }) { innerPadding ->
+                            CartScreen(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(innerPadding),
+                                viewModel = shopViewModel
+                            )
+                        }
+                        OrderSummary(onBuy = {
+                            navController.navigate("cart")
+                        },viewModel = shopViewModel
                         )
                     }
 //                    composable("orders/{cartId}") { backStackEntry ->
@@ -153,43 +174,63 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun CartScreen(modifier: Modifier = Modifier, viewModel: ShopViewModel = viewModel()) {
     val products by viewModel.cart.collectAsState()
-    println(products)
-    LazyColumn(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(16.dp)
-    ) {
-        items(products) { (product, quantity) ->
-            CartItem(product, quantity, viewModel)
+    Column {
+        LazyColumn(
+            modifier = modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(16.dp),
+
+            ) {
+            items(products) { (product, quantity) ->
+                CartItem(product, quantity, viewModel)
+            }
         }
     }
+
 }
+
 
 @Composable
 fun CartItem(product: Product, quantity: Int, viewModel: ShopViewModel = viewModel()) {
-    Row {
+    Row(
+        Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
         AsyncImage(
             model = product.image,
             contentDescription = product.title,
             contentScale = ContentScale.Fit,
             modifier = Modifier
-                .fillMaxWidth()
-                .height(150.dp)
+                .height(80.dp)
+                .width(100.dp)
                 .clip(MaterialTheme.shapes.medium)
         )
-        Button(onClick = { viewModel.addProduct(product) }) {
-            Text("+")
+        Text(
+            text = product.title.slice(0 until 30.coerceAtMost(product.title.length)),
+            modifier = Modifier.width(100.dp)
+        )
+        Column {
+            IconButton(onClick = { viewModel.addProduct(product) }) {
+                Icon(imageVector = Icons.Outlined.KeyboardArrowUp, contentDescription = "Add")
+            }
+            IconButton(onClick = { viewModel.popProduct(product) }) {
+                Icon(imageVector = Icons.Outlined.KeyboardArrowDown, contentDescription = "Remove")
+            }
+
         }
-        Button(onClick = { viewModel.popProduct(product) }) {
-            Text("-")
+        Column {
+            Text("Qty: $quantity")
+            Text(
+                text = "$${"%.2f".format(product.price * quantity)}", color = Color(0xFF186700)
+            )
         }
-        Text("Qty: $quantity")
     }
 }
 
 @Composable
 fun ProductScreen(
-    product: Product, addToCart: ()->Unit , modifier: Modifier = Modifier
+    product: Product, addToCart: () -> Unit, modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
 
@@ -327,10 +368,11 @@ fun ProductItem(product: Product, onClick: () -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProductTopAppBar(
-    onCartClick: () -> Unit, onMenuClick: (String) -> Unit
+    onCartClick: () -> Unit, onMenuClick: (String) -> Unit,
+    viewModel: ShopViewModel
 ) {
     var showMenu by remember { mutableStateOf(false) }
-//    val categories by
+    val categories by viewModel.categories.collectAsState()
 
     TopAppBar(title = {
         Text(
@@ -347,13 +389,48 @@ fun ProductTopAppBar(
             Icon(imageVector = Icons.Default.ShoppingCart, contentDescription = "Cart")
         }
 
-//        DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-//            categories.forEach { category ->
-//                DropdownMenuItem(text = { Text(category) }, onClick = {
-//                    onMenuClick(category)
-//                    showMenu = false
-//                })
-//            }
-//        }
+        DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+            categories.forEach { category ->
+                DropdownMenuItem(text = { Text(category) }, onClick = {
+                    onMenuClick(category)
+                    showMenu = false
+                })
+            }
+        }
+    })
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun OrderSummary(
+    onBuy: () -> Unit, viewModel: ShopViewModel = viewModel()
+) {
+    val products by viewModel.cart.collectAsState()
+    val total = products.sumOf { (product, quantity) ->
+        product.price * quantity
+    }
+
+
+    TopAppBar(title = {
+        Text(
+            fontSize = 24.sp,
+            text = "\uD83D\uDED2 Cart",
+            fontWeight = FontWeight.Black,
+            color = Color(0xFF4500FC)
+        )
+    }, modifier = Modifier.fillMaxWidth(), actions = {
+        Row(verticalAlignment = Alignment.CenterVertically){
+            Text(
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Black,
+                text = "$${"%.2f".format(total)}",
+                color = Color(0xFF186700),
+                modifier = Modifier.padding(end = 16.dp)
+            )
+            Button(onClick = onBuy){
+                Text("BUY")
+            }
+        }
+
     })
 }
