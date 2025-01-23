@@ -8,10 +8,6 @@ class OrderRepository(private val orderDao: OrderDao) {
         orderDao.insertOrder(order)
     }
 
-    suspend fun clearCart(cartId: Int) {
-        orderDao.deleteOrdersByCart(cartId)
-    }
-
     suspend fun getIncompleteOrder(): Order? {
         return orderDao.getIncompleteOrder()
     }
@@ -20,19 +16,16 @@ class OrderRepository(private val orderDao: OrderDao) {
         return orderDao.getAllOrders()
     }
 
-    suspend fun deleteOrderByProduct(productId: Int){
-        orderDao.deleteOrderByProduct(productId)
+    suspend fun deleteOneOrderByProduct(productId: Int){
+        orderDao.deleteOneOrderByProduct(productId)
     }
 
     suspend fun getOrdersByCart(cartId: Int):List<Order>{
         return orderDao.getOrdersByCart(cartId)
     }
 
-    suspend fun getOrderById(orderId: Long): Order? {
-        return orderDao.getOrderById(orderId)
-    }
 
-    suspend fun updateOrderStatus(cartId: Int, status: Boolean) {
+    suspend fun updatCartStatus(cartId: Int, status: Boolean) {
         orderDao.updateOrderStatus(cartId, status)
     }
 }

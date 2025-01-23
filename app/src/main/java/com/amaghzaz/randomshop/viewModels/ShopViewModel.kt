@@ -11,17 +11,15 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
 import kotlinx.coroutines.launch
+import kotlin.random.Random
 
 class ShopViewModel(private val orderRepository: OrderRepository) : ViewModel() {
     private val _products = MutableStateFlow<List<Product>>(emptyList())
     private val _categories = MutableStateFlow<List<String>>(emptyList())
     private val _filteredProducts = MutableStateFlow<List<Product>>(emptyList())
-
     private val _orders = MutableStateFlow<List<Order>>(emptyList())
     private val _cart = MutableStateFlow<List<Pair<Product, Int>>>(emptyList())
-
-    private var cartId = 0
-
+    private var cartId = Random.nextInt(1, 999999999)
     val products: StateFlow<List<Product>> get() = _products
     val categories: StateFlow<List<String>> get() = _categories
     val filteredProducts: StateFlow<List<Product>> get() = _filteredProducts
@@ -29,6 +27,7 @@ class ShopViewModel(private val orderRepository: OrderRepository) : ViewModel() 
 
     init {
         fetchProducts()
+        fetchOrders()
         updateCart()
     }
 
@@ -94,7 +93,7 @@ class ShopViewModel(private val orderRepository: OrderRepository) : ViewModel() 
         viewModelScope.launch {
             try {
                 updateCart()
-                orderRepository.deleteOrderByProduct(product.id)
+                orderRepository.deleteOneOrderByProduct(product.id)
                 updateCart()
             } catch (e: Exception) {
                 println("Error adding order: ${e.message}")
@@ -126,4 +125,17 @@ class ShopViewModel(private val orderRepository: OrderRepository) : ViewModel() 
             }
         }
     }
+
+
+    fun buyCart(){
+        viewModelScope.launch {
+            try{
+                orderRepository.updatCartStatus(cartId, true)
+            }catch(e:Exception){
+                println("Error buying cart: ${e.message}")
+
+            }
+        }
+    }
+
 }

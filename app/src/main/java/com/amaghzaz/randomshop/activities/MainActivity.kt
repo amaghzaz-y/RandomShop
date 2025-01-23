@@ -1,16 +1,20 @@
 package com.amaghzaz.randomshop.activities
+
 import androidx.compose.material3.Icon
 import android.annotation.SuppressLint
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
@@ -30,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -87,7 +92,7 @@ class MainActivity : ComponentActivity() {
                                 navController.navigate("cart")
                             }, onMenuClick = { category ->
                                 shopViewModel.filterProductsByCategory(category)
-                            },viewModel = shopViewModel)
+                            }, viewModel = shopViewModel)
                         }) { innerPadding ->
                             if (product != null) {
                                 ProductScreen(
@@ -112,7 +117,7 @@ class MainActivity : ComponentActivity() {
                                 navController.navigate("cart")
                             }, onMenuClick = { category ->
                                 shopViewModel.filterProductsByCategory(category)
-                            },viewModel = shopViewModel)
+                            }, viewModel = shopViewModel)
                         }) { innerPadding ->
                             CartScreen(
                                 modifier = Modifier
@@ -121,9 +126,8 @@ class MainActivity : ComponentActivity() {
                                 viewModel = shopViewModel
                             )
                         }
-                        OrderSummary(onBuy = {
-                            navController.navigate("cart")
-                        },viewModel = shopViewModel
+                        OrderSummary(
+                           viewModel = shopViewModel
                         )
                     }
                 }
@@ -133,19 +137,19 @@ class MainActivity : ComponentActivity() {
 }
 
 
-
-
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OrderSummary(
-    onBuy: () -> Unit, viewModel: ShopViewModel = viewModel()
+    viewModel: ShopViewModel = viewModel()
 ) {
     val products by viewModel.cart.collectAsState()
     val total = products.sumOf { (product, quantity) ->
         product.price * quantity
     }
-
+    val numProducts = products.groupBy { it.first }.size
+    val numItems = products.sumOf { (_, quantity) ->
+        quantity
+    }
 
     TopAppBar(title = {
         Text(
@@ -155,19 +159,30 @@ fun OrderSummary(
             color = Color(0xFF4500FC)
         )
     }, modifier = Modifier.fillMaxWidth(), actions = {
-        Row(verticalAlignment = Alignment.CenterVertically){
+        Column {
             Text(
-                fontSize = 20.sp,
+                fontSize = 15.sp,
                 fontWeight = FontWeight.Black,
-                text = "$${"%.2f".format(total)}",
-                color = Color(0xFF186700),
+                text = "$numProducts Products",
+                color = Color(0x9E0052D2),
                 modifier = Modifier.padding(end = 16.dp)
             )
-            Button(onClick = onBuy){
-                Text("BUY")
-            }
+            Text(
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Black,
+                text = "$numItems Items",
+                color = Color(0x9E0052D2),
+                modifier = Modifier.padding(end = 16.dp)
+            )
         }
 
+        Text(
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Black,
+            text = "$${"%.2f".format(total)}",
+            color = Color(0xFF186700),
+            modifier = Modifier.padding(end = 16.dp)
+        )
     })
 }
 
@@ -175,8 +190,7 @@ fun OrderSummary(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProductTopAppBar(
-    onCartClick: () -> Unit, onMenuClick: (String) -> Unit,
-    viewModel: ShopViewModel
+    onCartClick: () -> Unit, onMenuClick: (String) -> Unit, viewModel: ShopViewModel
 ) {
     var showMenu by remember { mutableStateOf(false) }
     val categories by viewModel.categories.collectAsState()

@@ -6,15 +6,13 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
-import kotlinx.coroutines.flow.Flow
-
 
 @Entity(tableName = "orders")
 data class Order(
     @PrimaryKey(autoGenerate = true) val orderId: Long = 0,
     val cartId: Int,
     val product: Int,
-    val complete: Boolean
+    val complete: Boolean,
 )
 
 @Dao
@@ -34,12 +32,9 @@ interface OrderDao {
     @Query("SELECT * FROM orders WHERE complete = :complete LIMIT 1")
     suspend fun getIncompleteOrder(complete: Boolean = false): Order?
 
-    @Query("UPDATE orders SET complete = :complete WHERE cartId = :cartId")
+    @Query("UPDATE orders SET complete = :complete  WHERE cartId = :cartId")
     suspend fun updateOrderStatus(cartId: Int, complete: Boolean)
 
-    @Query("DELETE FROM orders  WHERE cartId = :cartId")
-    suspend fun deleteOrdersByCart(cartId: Int)
-
     @Query("DELETE FROM orders WHERE rowid = (SELECT rowid FROM orders WHERE product = :productId LIMIT 1)")
-    suspend fun deleteOrderByProduct(productId: Int)
+    suspend fun deleteOneOrderByProduct(productId: Int)
 }
