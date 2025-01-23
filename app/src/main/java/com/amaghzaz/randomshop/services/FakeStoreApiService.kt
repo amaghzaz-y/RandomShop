@@ -1,6 +1,6 @@
 package com.amaghzaz.randomshop.services
 
-import com.amaghzaz.randomshop.viewModels.Product
+import com.amaghzaz.randomshop.models.Product
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
